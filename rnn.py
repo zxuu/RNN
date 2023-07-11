@@ -19,7 +19,7 @@ class RNN(nn.Module):
         self.rnn_cell = RNN_Cell(in_dim, hidden_dim)
 
     def forward(self, x):
-        """
+        """哈哈哈
         x: [seq_len, batch_size, in_dim]
         """
         outs = []
