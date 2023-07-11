@@ -1,6 +1,7 @@
 from torch import nn
 import torch
 
+
 class RNN_Cell(nn.Module):
     def __init__(self, in_dim, hidden_dim):
         super(RNN_Cell, self).__init__()
@@ -9,8 +10,10 @@ class RNN_Cell(nn.Module):
         self.b = nn.Parameter(torch.rand(1, hidden_dim))
 
     def forward(self, x, h_1):
-        h = torch.tanh(torch.matmul(x, self.Wx) + torch.matmul(h_1, self.Wh) + self.b)
+        h = torch.tanh(torch.matmul(x, self.Wx) +
+                       torch.matmul(h_1, self.Wh) + self.b)
         return h
+
 
 class RNN(nn.Module):
     def __init__(self, in_dim, hidden_dim):
@@ -27,9 +30,10 @@ class RNN(nn.Module):
         for seq_x in x:
             # seq_x: [batch, in_dim]
             if h is None:
-                h = torch.randn(x.shape[1], self.hidden_dim)    # [batch, hidden_dim]
+                # [batch, hidden_dim]
+                h = torch.randn(x.shape[1], self.hidden_dim)
             h = self.rnn_cell(seq_x, h)
-            outs.append(torch.unsqueeze(h,0))
+            outs.append(torch.unsqueeze(h, 0))
         outs = torch.cat(outs)
         return outs, h
 
