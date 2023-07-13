@@ -10,8 +10,7 @@ class RNN_Cell(nn.Module):
         self.b = nn.Parameter(torch.rand(1, hidden_dim))
 
     def forward(self, x, h_1):
-        h = torch.tanh(torch.matmul(x, self.Wx) +
-                       torch.matmul(h_1, self.Wh) + self.b)
+        h = torch.tanh(torch.matmul(x, self.Wx) + torch.matmul(h_1, self.Wh) + self.b)
         return h
 
 
