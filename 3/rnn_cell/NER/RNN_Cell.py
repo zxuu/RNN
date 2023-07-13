@@ -96,6 +96,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 
 for i in range(epoch):
     net.train()
+    right = []    # 记录每个句子的准确率
     for texts_idd, labels_idd in loader:
         texts_idd = texts_idd
         labels_idd = labels_idd
@@ -106,7 +107,7 @@ for i in range(epoch):
         loss = 0
         
         hidden = net.init_hidden()
-        print('Predicted string: ', end='')
+        # print('Predicted string: ', end='')
         is_right = [0]
         for input, label in zip(texts_embedding, labels_y):  # inputs：seg_len * batch_size * input_size；labels：
             # input.cuda()
@@ -122,7 +123,10 @@ for i in range(epoch):
             # 记录预测是否正确
             if label.item()!=26:
                 is_right.extend([1 if label.item()==idx.item() else 0])
-        print('sentence acc:%.4f' % (sum(is_right)/len(is_right)))
+        sentence_acc = sum(is_right)/len(is_right)
+        print('sentence acc:%.4f' % (sentence_acc))
+        right.extend([sentence_acc])
         loss.backward()
         optimizer.step()
-        print(', Epoch [%d/%d] loss=%.4f' % (i+1,epoch, loss.item())) 
+        # print(', Epoch [%d/%d] loss=%.4f' % (i+1,epoch, loss.item()))
+    print('all_sentence acc:%.4f' % (sum(right)/len(right)))
