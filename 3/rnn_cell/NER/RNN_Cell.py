@@ -107,6 +107,7 @@ for i in range(epoch):
         
         hidden = net.init_hidden()
         print('Predicted string: ', end='')
+        is_right = [0]
         for input, label in zip(texts_embedding, labels_y):  # inputs：seg_len * batch_size * input_size；labels：
             # input.cuda()
             # hidden.cuda()
@@ -117,7 +118,11 @@ for i in range(epoch):
             loss = loss + criterion(hidden, label)  # 要把每个字母的loss累加    =([1,4], [1])
             _, idx = hidden.max(dim=1)
             # 输出预测
-            print(id2label[idx.item()]+' ', end='')
+            # print(id2label[idx.item()]+' ', end='')
+            # 记录预测是否正确
+            if label.item()!=26:
+                is_right.extend([1 if label.item()==idx.item() else 0])
+        print('sentence acc:%.4f' % (sum(is_right)/len(is_right)))
         loss.backward()
         optimizer.step()
         print(', Epoch [%d/%d] loss=%.4f' % (i+1,epoch, loss.item())) 
