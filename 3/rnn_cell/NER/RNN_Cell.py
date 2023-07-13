@@ -27,14 +27,19 @@ texts_id = [[word2id[v] for k,v in enumerate(text)] for text in texts]
 labels_id = [[label2id[v] for k,v in enumerate(label)] for label in labels]
 length_vocab = len(vocab)
 length_labels = len(unique_label)
+lenght_texts = len(texts)
 
 in_dim = 512
 hidden_dim = length_labels
 epoch = 10
 batch_size = 1
 
-
+# torch.nn
+Embedding = nn.Embedding(length_vocab, in_dim)
+# torch.rand, torch.randn
 word_embedding = torch.randn(length_vocab, in_dim)   # 输入的词向量是正态分布
+# one-hot编码输入
+zero_mat = torch.eye(length_vocab)
 
 class MyDataSet(Data.Dataset):
     def __init__(self, texts, labels):
@@ -86,36 +91,34 @@ class RNN(torch.nn.Module):
     def init_hidden(self):
         return torch.zeros(self.batch_size, self.hidden_size)
     
-Embedding = nn.Embedding(length_vocab, in_dim)
 
 
-net = RNN(input_size=in_dim, hidden_size=hidden_dim, batch_size=batch_size)
+
+net = RNN(input_size=length_vocab, hidden_size=length_vocab, batch_size=batch_size)
 # net.cuda()
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 
 for i in range(epoch):
     net.train()
-    right = []    # 记录每个句子的准确率
+    right = []    # 记录全部句子的准确率
     for texts_idd, labels_idd in loader:
         texts_idd = texts_idd
         labels_idd = labels_idd
         # texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
-        texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
+        # texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
+        texts_embedding = zero_mat[torch.tensor(texts_idd)]
         labels_y = torch.tensor(labels_idd).view(-1, 1)    # [seq_len, 1]
-
         loss = 0
-        
         hidden = net.init_hidden()
         # print('Predicted string: ', end='')
-        is_right = [0]
+        is_right = [0]    # 记录一个句子的准确度
         for input, label in zip(texts_embedding, labels_y):  # inputs：seg_len * batch_size * input_size；labels：
             # input.cuda()
             # hidden.cuda()
             # label.cuda()
             optimizer.zero_grad()
             hidden = net.forward(input, hidden)
-            
             loss = loss + criterion(hidden, label)  # 要把每个字母的loss累加    =([1,4], [1])
             _, idx = hidden.max(dim=1)
             # 输出预测
