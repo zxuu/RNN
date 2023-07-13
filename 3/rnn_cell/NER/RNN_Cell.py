@@ -34,7 +34,7 @@ epoch = 10
 batch_size = 1
 
 
-word_embedding = torch.randn(length_vocab, in_dim)   # 输入的词向量是均匀分布
+word_embedding = torch.randn(length_vocab, in_dim)   # 输入的词向量是正态分布
 
 class MyDataSet(Data.Dataset):
     def __init__(self, texts, labels):
