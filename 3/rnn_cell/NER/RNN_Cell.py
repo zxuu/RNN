@@ -86,7 +86,7 @@ class RNN(torch.nn.Module):
     def init_hidden(self):
         return torch.zeros(self.batch_size, self.hidden_size)
     
-# Embedding = nn.Embedding(length_vocab, in_dim)
+Embedding = nn.Embedding(length_vocab, in_dim)
 
 
 net = RNN(input_size=in_dim, hidden_size=hidden_dim, batch_size=batch_size)
@@ -100,8 +100,8 @@ for i in range(epoch):
     for texts_idd, labels_idd in loader:
         texts_idd = texts_idd
         labels_idd = labels_idd
-        texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
-        # texts_embedding = Embedding(torch.tensor(texts_id)).view(-1, batch_size, in_dim)
+        # texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
+        texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
         labels_y = torch.tensor(labels_idd).view(-1, 1)    # [seq_len, 1]
 
         loss = 0
