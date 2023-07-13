@@ -29,7 +29,7 @@ length_vocab = len(vocab)
 length_labels = len(unique_label)
 lenght_texts = len(texts)
 
-in_dim = 512
+in_dim = length_labels
 hidden_dim = length_labels
 epoch = 10
 batch_size = 1
@@ -73,28 +73,32 @@ class RNN_Cell(nn.Module):
 class RNN(torch.nn.Module):
     def __init__(self, input_size, hidden_size, batch_size):
         """
-        input_size: 4
-        hidden_size: 4
-        batch_size: 1
+        input_size: 字符嵌入向量维度
+        hidden_size: 隐层维度
+        batch_size: 
         """
         super(RNN, self).__init__()
         self.batch_size = batch_size
         self.input_size = input_size
         self.hidden_size = hidden_size
         # self.rnncell = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
-        self.rnncell = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.rnncell1 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.rnncell2 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.rnncell3 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
 
-    def forward(self, input, hidden):
-        hidden = self.rnncell(input, hidden)
-        return hidden
+    def forward(self, input, hidden1, hidden2, hidden3):
+        h1 = self.rnncell1(input, hidden1)
+        h2 = self.rnncell2(h1, hidden2)
+        h3 = self.rnncell3(h2, hidden3)
+        return h1, h2, h3
 
     def init_hidden(self):
-        return torch.zeros(self.batch_size, self.hidden_size)
+        return torch.zeros(self.batch_size, self.hidden_size),torch.zeros(self.batch_size, self.hidden_size),torch.zeros(self.batch_size, self.hidden_size)
     
 
 
 
-net = RNN(input_size=length_vocab, hidden_size=length_vocab, batch_size=batch_size)
+net = RNN(input_size=in_dim, hidden_size=hidden_dim, batch_size=batch_size)
 # net.cuda()
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
@@ -105,12 +109,12 @@ for i in range(epoch):
     for texts_idd, labels_idd in loader:
         texts_idd = texts_idd
         labels_idd = labels_idd
-        # texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
+        texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
         # texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
-        texts_embedding = zero_mat[torch.tensor(texts_idd)]
+        # texts_embedding = zero_mat[torch.tensor(texts_idd)]
         labels_y = torch.tensor(labels_idd).view(-1, 1)    # [seq_len, 1]
         loss = 0
-        hidden = net.init_hidden()
+        hidden1,hidden2,hidden3 = net.init_hidden()
         # print('Predicted string: ', end='')
         is_right = [0]    # 记录一个句子的准确度
         for input, label in zip(texts_embedding, labels_y):  # inputs：seg_len * batch_size * input_size；labels：
@@ -118,9 +122,9 @@ for i in range(epoch):
             # hidden.cuda()
             # label.cuda()
             optimizer.zero_grad()
-            hidden = net.forward(input, hidden)
-            loss = loss + criterion(hidden, label)  # 要把每个字母的loss累加    =([1,4], [1])
-            _, idx = hidden.max(dim=1)
+            hidden1,hidden2,hidden3 = net.forward(input, hidden1=hidden1,hidden2=hidden2,hidden3=hidden3)
+            loss = loss + criterion(hidden3, label)  # 要把每个字母的loss累加    =([1,4], [1])
+            _, idx = hidden3.max(dim=1)
             # 输出预测
             # print(id2label[idx.item()]+' ', end='')
             # 记录预测是否正确
