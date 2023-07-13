@@ -29,9 +29,9 @@ length_vocab = len(vocab)
 length_labels = len(unique_label)
 lenght_texts = len(texts)
 
-in_dim = length_labels
+in_dim = 512
 hidden_dim = length_labels
-epoch = 10
+epoch = 1
 batch_size = 1
 
 # torch.nn
@@ -67,7 +67,7 @@ class RNN_Cell(nn.Module):
         # self.b = nn.Parameter(1, hidden_dim)
 
     def forward(self, x, h_1):
-        h = torch.tanh(self.Wx(x) + self.Wh(h_1))
+        h = torch.tanh(self.Wx(x) + self.Wh(h_1))    # [batch, hidden_dim]
         return h
 
 class RNN(torch.nn.Module):
@@ -83,13 +83,17 @@ class RNN(torch.nn.Module):
         self.hidden_size = hidden_size
         # self.rnncell = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
         self.rnncell1 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.linear1 = nn.Linear(hidden_dim, in_dim)
         self.rnncell2 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.linear2 = nn.Linear(hidden_dim, in_dim)
         self.rnncell3 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
 
     def forward(self, input, hidden1, hidden2, hidden3):
         h1 = self.rnncell1(input, hidden1)
-        h2 = self.rnncell2(h1, hidden2)
-        h3 = self.rnncell3(h2, hidden3)
+        l1 = self.linear1(h1)
+        h2 = self.rnncell2(l1, hidden2)
+        l2 = self.linear2(h2)
+        h3 = self.rnncell3(l2, hidden3)
         return h1, h2, h3
 
     def init_hidden(self):
@@ -106,7 +110,11 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 for i in range(epoch):
     net.train()
     right = []    # 记录全部句子的准确率
+    j = 0
     for texts_idd, labels_idd in loader:
+        # j = j + 1
+        # if j > 400:
+        #     break
         texts_idd = texts_idd
         labels_idd = labels_idd
         texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
