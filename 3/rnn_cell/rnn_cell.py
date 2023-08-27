@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+# 自实现RNN实战
 input_size = 4
 hidden_size = 4
 batch_size = 1
@@ -27,12 +28,12 @@ class RNN_Cell(nn.Module):
         hidden_dim: 4 隐层维度
         """
         super(RNN_Cell, self).__init__()
-        self.Wx = nn.Linear(in_dim, hidden_dim)
-        self.Wh = nn.Linear(hidden_dim, hidden_dim)
-        # self.b = nn.Parameter(1, hidden_dim)
+        self.Wx = nn.Linear(in_dim, hidden_dim, bias=False)
+        self.Wh = nn.Linear(hidden_dim, hidden_dim, bias=False)
+        self.b = nn.Parameter(torch.randn(1, hidden_dim))
 
-    def forward(self, x, h_1):
-        h = torch.tanh(self.Wx(x) + self.Wh(h_1))
+    def forward(self, input, hidden):
+        h = torch.tanh(self.Wx(input) + self.Wh(hidden) + self.b)
         return h
 
 class RNN(torch.nn.Module):
@@ -46,7 +47,7 @@ class RNN(torch.nn.Module):
         self.batch_size = batch_size
         self.input_size = input_size
         self.hidden_size = hidden_size
-        # self.rnncell = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
+        # self.rnncell = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)    # 调cell包
         self.rnncell = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
 
     def forward(self, input, hidden):
@@ -62,14 +63,14 @@ net = RNN(input_size, hidden_size, batch_size)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 
-epoch = 5500
+epoch = 500
 for i in range(epoch):
     loss = 0
     optimizer.zero_grad()
     hidden = net.init_hidden()
     print('Predicted string: ', end='')
     for input, label in zip(inputs, labels):  # inputs：seg_len * batch_size * input_size；labels：
-        hidden = net.forward(input, hidden)
+        hidden = net(input, hidden)    # [batch, hidden_size] = net([1,4], [1,4])
         loss += criterion(hidden, label)  # 要把每个字母的loss累加    =([1,4], [1])
         _, idx = hidden.max(dim=1)
         # 输出预测

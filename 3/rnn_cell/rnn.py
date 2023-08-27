@@ -1,5 +1,6 @@
 import torch
 
+# 调包实战
 input_size = 4
 hidden_size = 4
 num_layers = 1
@@ -7,17 +8,19 @@ batch_size = 1
 seq_len = 5
 
 idx2char = ['e', 'h', 'l', 'o']
-x_data = [1, 0, 2, 2, 3]
-y_data = [3, 1, 2, 3, 2]
+x_data = [1, 0, 2, 2, 3]    # hello
+y_data = [3, 1, 2, 3, 2]    # ohlol
 
 # 设置一个one-hot编码的查找，使后续one-hot编码更加便利
+# 制造输入数据
 one_hot_lookup = [[1, 0, 0, 0],
                   [0, 1, 0, 0],
                   [0, 0, 1, 0],
                   [0, 0, 0, 1]]
 x_one_hot = [one_hot_lookup[x] for x in x_data]  # seg_len * input_size
-
+print(torch.Tensor(x_one_hot))
 inputs = torch.Tensor(x_one_hot).view(seq_len, batch_size, input_size)  # 要把inputs变为seg_len * batch_size * input_size的形式
+print(inputs)
 labels = torch.LongTensor(y_data)  # labels: seg_len * batch_size * 1
 
 
@@ -34,7 +37,7 @@ class Model(torch.nn.Module):
         # 初始化hidden，即h0: num_layers * batch_size * hidden_size
         hidden = torch.zeros(self.num_layers, self.batch_size, self.hidden_size)
         out, _ = self.rnn(input, hidden)  # out: seg_len * batch_size * hidden_size
-        return out.view(-1, self.hidden_size)  # return: seg_len * batch_size 返回一个矩阵
+        return out.view(-1, self.hidden_size)  # return: seg_len * hidden_size 返回一个矩阵
 
 
 net = Model(input_size, hidden_size, batch_size, num_layers)

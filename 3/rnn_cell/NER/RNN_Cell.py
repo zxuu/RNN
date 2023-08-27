@@ -3,6 +3,7 @@ import json
 from torch import nn
 import torch.utils.data as Data
 
+# 自实现RNN(多层)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 texts, labels = [], []
@@ -14,8 +15,8 @@ for line in open('D:\project\\vscode\RNN_Proj\data\\train_data3.txt','r',encodin
     unique_text.extend(json_data['text'])
     unique_label.extend(json_data['labels'])
 
-unique_text = list(set(unique_text))
-unique_label = list(set(unique_label))
+unique_text = list(set(unique_text))    # vocab
+unique_label = list(set(unique_label))    # unique_label
 # print('len(unique_text),len(unique_label)', len(unique_text), len(unique_label))
 
 vocab = unique_text
@@ -31,15 +32,14 @@ lenght_texts = len(texts)
 
 in_dim = 512
 hidden_dim = length_labels
-epoch = 1
+epoch = 10
 batch_size = 1
 
-# torch.nn
-Embedding = nn.Embedding(length_vocab, in_dim)
+# word_embedding = nn.Embedding(length_vocab, in_dim)
 # torch.rand, torch.randn
 word_embedding = torch.randn(length_vocab, in_dim)   # 输入的词向量是正态分布
 # one-hot编码输入
-zero_mat = torch.eye(length_vocab)
+# word_embedding = torch.eye(length_vocab)
 
 class MyDataSet(Data.Dataset):
     def __init__(self, texts, labels):
@@ -87,6 +87,8 @@ class RNN(torch.nn.Module):
         self.rnncell2 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
         self.linear2 = nn.Linear(hidden_dim, in_dim)
         self.rnncell3 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.linear3 = nn.Linear(hidden_dim, length_labels)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, input, hidden1, hidden2, hidden3):
         h1 = self.rnncell1(input, hidden1)
@@ -94,7 +96,9 @@ class RNN(torch.nn.Module):
         h2 = self.rnncell2(l1, hidden2)
         l2 = self.linear2(h2)
         h3 = self.rnncell3(l2, hidden3)
-        return h1, h2, h3
+        l3 = self.linear3(h3)
+        y = self.softmax(l3)
+        return h1, h2, h3, l3
 
     def init_hidden(self):
         return torch.zeros(self.batch_size, self.hidden_size),torch.zeros(self.batch_size, self.hidden_size),torch.zeros(self.batch_size, self.hidden_size)
@@ -110,8 +114,10 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 for i in range(epoch):
     net.train()
     right = []    # 记录全部句子的准确率
-    j = 0
-    for texts_idd, labels_idd in loader:
+    loss_epoch = 0
+    # optimizer.zero_grad()
+    # hidden1,hidden2,hidden3 = net.init_hidden()
+    for texts_idd, labels_idd in loader:    # 一句话
         # j = j + 1
         # if j > 400:
         #     break
@@ -125,23 +131,25 @@ for i in range(epoch):
         hidden1,hidden2,hidden3 = net.init_hidden()
         # print('Predicted string: ', end='')
         is_right = [0]    # 记录一个句子的准确度
-        for input, label in zip(texts_embedding, labels_y):  # inputs：seg_len * batch_size * input_size；labels：
+        for input, label in zip(texts_embedding, labels_y):  #一句话中的每个词 inputs：seg_len * batch_size * input_size；labels：[seg_len]
             # input.cuda()
             # hidden.cuda()
             # label.cuda()
+            input = input.unsqueeze(0)
             optimizer.zero_grad()
-            hidden1,hidden2,hidden3 = net.forward(input, hidden1=hidden1,hidden2=hidden2,hidden3=hidden3)
-            loss = loss + criterion(hidden3, label)  # 要把每个字母的loss累加    =([1,4], [1])
-            _, idx = hidden3.max(dim=1)
+            hidden1,hidden2,hidden3,y = net.forward(input, hidden1=hidden1,hidden2=hidden2,hidden3=hidden3)
+            loss = loss + criterion(y, label)  # 要把每个字母的loss累加    =([1,4], [1])
+            _, idx = y.max(dim=1)
             # 输出预测
             # print(id2label[idx.item()]+' ', end='')
             # 记录预测是否正确
-            if label.item()!=26:
-                is_right.extend([1 if label.item()==idx.item() else 0])
+            # if label.item()!=26:
+            is_right.extend([1 if label.item()==idx.item() else 0])
         sentence_acc = sum(is_right)/len(is_right)
-        print('sentence acc:%.4f' % (sentence_acc))
+        loss_epoch = loss_epoch + loss
+        # print('sentence acc:%.4f, loss:%.4f' % (sentence_acc, loss))
         right.extend([sentence_acc])
         loss.backward()
         optimizer.step()
         # print(', Epoch [%d/%d] loss=%.4f' % (i+1,epoch, loss.item()))
-    print('all_sentence acc:%.4f' % (sum(right)/len(right)))
+    print('all_sentence acc:%.4f, loss:%.4f' % (sum(right)/len(right), loss_epoch/len(right)))
