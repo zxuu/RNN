@@ -28,7 +28,14 @@ all_sentence acc:0.5885, loss:102.9117
 ```
 ```python
 Embedding = nn.Embedding(length_vocab, in_dim)
-...
-texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
+all_sentence acc:0.5706, loss:108.1364
+all_sentence acc:0.5827, loss:105.3522
+all_sentence acc:0.5825, loss:102.8504
+all_sentence acc:0.5776, loss:103.5315
+all_sentence acc:0.5784, loss:103.9420
+all_sentence acc:0.5776, loss:103.2978
+all_sentence acc:0.5721, loss:105.8887
+all_sentence acc:0.5744, loss:104.0500
+all_sentence acc:0.5735, loss:104.3058
+all_sentence acc:0.5709, loss:104.7786
 ```
-nn.embedding输入准确率：all_sentence acc:0.1734

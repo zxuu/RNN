@@ -35,9 +35,9 @@ hidden_dim = length_labels
 epoch = 10
 batch_size = 1
 
-# word_embedding = nn.Embedding(length_vocab, in_dim)
+word_embedding = nn.Embedding(length_vocab, in_dim)
 # torch.rand, torch.randn
-word_embedding = torch.randn(length_vocab, in_dim)   # 输入的词向量是正态分布
+# word_embedding = torch.rand(length_vocab, in_dim)   # 输入的词向量是正态分布
 # one-hot编码输入
 # word_embedding = torch.eye(length_vocab)
 
@@ -123,7 +123,7 @@ for i in range(epoch):
         #     break
         texts_idd = texts_idd
         labels_idd = labels_idd
-        texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
+        texts_embedding = word_embedding(torch.tensor(texts_idd))    # [seq_len, in_dim]
         # texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
         # texts_embedding = zero_mat[torch.tensor(texts_idd)]
         labels_y = torch.tensor(labels_idd).view(-1, 1)    # [seq_len, 1]
