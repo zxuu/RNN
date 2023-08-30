@@ -51,7 +51,7 @@ class MyDataSet(Data.Dataset):
 loader = Data.DataLoader(MyDataSet(texts=texts_id, labels=labels_id), batch_size=1)
 
 net = nn.RNN(input_size=in_dim, hidden_size=hidden_dim, num_layers=3)
-h0 = torch.randn(3*1, 1, hidden_dim)
+h0 = torch.randn(3*1, 1, hidden_dim)    # (num_layers*bidirectional, batch, hidden_dim)
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
 
