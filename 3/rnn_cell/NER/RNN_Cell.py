@@ -17,29 +17,28 @@ for line in open('D:\project\\vscode\RNN_Proj\data\\train_data3.txt','r',encodin
 
 unique_text = list(set(unique_text))    # vocab
 unique_label = list(set(unique_label))    # unique_label
-# print('len(unique_text),len(unique_label)', len(unique_text), len(unique_label))
 
 vocab = unique_text
 word2id = {v:k for k,v in enumerate(sorted(vocab))}
 id2word = {k:v for k,v in enumerate(sorted(vocab))}
 label2id = {v:k for k,v in enumerate(sorted(unique_label))}
 id2label = {k:v for k,v in enumerate(sorted(unique_label))}
-texts_id = [[word2id[v] for k,v in enumerate(text)] for text in texts]
+texts_id = [[word2id[v] for k,v in enumerate(text)] for text in texts]    # [每句话中的每个字在字典中的ID]
 labels_id = [[label2id[v] for k,v in enumerate(label)] for label in labels]
 length_vocab = len(vocab)
 length_labels = len(unique_label)
 lenght_texts = len(texts)
 
-in_dim = length_vocab
-hidden_dim = length_labels
+in_dim = 512    # 输入维度(字嵌入维度)
+hidden_dim = length_labels    # 隐层维度(这里直接和分类数相等了)
 epoch = 10
-batch_size = 1
+batch_size = 1    # batch=1就不用考虑句子不等长了
 
-# word_embedding = nn.Embedding(length_vocab, in_dim)
+word_embedding = nn.Embedding(length_vocab, in_dim)
 # torch.rand, torch.randn
 # word_embedding = torch.rand(length_vocab, in_dim)   # 输入的词向量是正态分布
 # one-hot编码输入
-word_embedding = torch.eye(length_vocab)
+# word_embedding = torch.eye(length_vocab)
 
 class MyDataSet(Data.Dataset):
     def __init__(self, texts, labels):
@@ -81,12 +80,14 @@ class RNN(torch.nn.Module):
         self.batch_size = batch_size
         self.input_size = input_size
         self.hidden_size = hidden_size
-        # self.rnncell = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
-        self.rnncell1 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        self.rnncell1 = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
+        self.rnncell2 = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
+        self.rnncell3 = torch.nn.RNNCell(input_size=self.input_size, hidden_size=self.hidden_size)
+        # self.rnncell1 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
         self.linear1 = nn.Linear(hidden_dim, in_dim)
-        self.rnncell2 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        # self.rnncell2 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
         self.linear2 = nn.Linear(hidden_dim, in_dim)
-        self.rnncell3 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
+        # self.rnncell3 = RNN_Cell(in_dim=self.input_size, hidden_dim=self.hidden_size)
         self.linear3 = nn.Linear(hidden_dim, length_labels)
         self.softmax = nn.Softmax(dim=1)
 
@@ -115,41 +116,28 @@ for i in range(epoch):
     net.train()
     right = []    # 记录全部句子的准确率
     loss_epoch = 0
-    # optimizer.zero_grad()
-    # hidden1,hidden2,hidden3 = net.init_hidden()
     for texts_idd, labels_idd in loader:    # 一句话
-        # j = j + 1
-        # if j > 400:
-        #     break
         texts_idd = texts_idd
         labels_idd = labels_idd
-        texts_embedding = word_embedding[torch.tensor(texts_idd)]    # [seq_len, in_dim]
+        texts_embedding = word_embedding(torch.tensor(texts_idd))    # [seq_len, in_dim]
         # texts_embedding = Embedding(torch.tensor(texts_idd)).view(-1, batch_size, in_dim)
         # texts_embedding = zero_mat[torch.tensor(texts_idd)]
         labels_y = torch.tensor(labels_idd).view(-1, 1)    # [seq_len, 1]
         loss = 0
         hidden1,hidden2,hidden3 = net.init_hidden()
-        # print('Predicted string: ', end='')
         is_right = [0]    # 记录一个句子的准确度
         for input, label in zip(texts_embedding, labels_y):  #一句话中的每个词 inputs：seg_len * batch_size * input_size；labels：[seg_len]
-            # input.cuda()
-            # hidden.cuda()
-            # label.cuda()
             input = input.unsqueeze(0)
             optimizer.zero_grad()
             hidden1,hidden2,hidden3,y = net.forward(input, hidden1=hidden1,hidden2=hidden2,hidden3=hidden3)
             loss = loss + criterion(y, label)  # 要把每个字母的loss累加    =([1,4], [1])
             _, idx = y.max(dim=1)
-            # 输出预测
-            # print(id2label[idx.item()]+' ', end='')
             # 记录预测是否正确
             # if label.item()!=26:
             is_right.extend([1 if label.item()==idx.item() else 0])
         sentence_acc = sum(is_right)/len(is_right)
         loss_epoch = loss_epoch + loss
-        # print('sentence acc:%.4f, loss:%.4f' % (sentence_acc, loss))
         right.extend([sentence_acc])
         loss.backward()
         optimizer.step()
-        # print(', Epoch [%d/%d] loss=%.4f' % (i+1,epoch, loss.item()))
     print('all_sentence acc:%.4f, loss:%.4f' % (sum(right)/len(right), loss_epoch/len(right)))
